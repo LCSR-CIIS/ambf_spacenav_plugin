@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ambf_spacenav_plugin</name>
+  <version>0.0.0</version>
+  <description>AMBF plugin that control objects in ambf simulation using spacenav mouse.</description>
+  <maintainer email="hishida3@jhu.edu">Hisashi Ishida</maintainer>
+  <license>BSD</license>
+  <buildtool_depend>catkin</buildtool_depend>
+</package>
