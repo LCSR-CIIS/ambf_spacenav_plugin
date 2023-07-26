@@ -362,6 +362,7 @@ void afSpaceNavControlPlugin::reset(){
 
 bool afSpaceNavControlPlugin::close(){
     delete m_activeObjectLabel;
+    delete m_objectListLabel;
     m_spaceNavControl.close();
     return -1;
 }
