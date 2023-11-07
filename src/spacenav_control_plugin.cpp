@@ -269,6 +269,22 @@ bool afSpaceNavControlPlugin::initCamera(vector<string> cameraNames){
     return true;
 }
 
+bool afSpaceNavControlPlugin::changeCamera(afCameraPtr cameraPtr){
+    cout << "> Changing CAMERA ..." << endl;
+
+    // Specify the camera for the text overlays
+    m_panelManager.addCamera(cameraPtr);
+    cBackground* background = new cBackground();
+    background->setCornerColors(cColorf(1.0f, 1.0f, 1.0f),
+                                cColorf(1.0f, 1.0f, 1.0f),
+                                cColorf(0.6f, 0.6f, 0.6f),
+                                cColorf(0.6f, 0.6f, 0.6f));
+    cameraPtr->getBackLayer()->addChild(background);
+
+    return true;
+}
+
+
 bool afSpaceNavControlPlugin::initLabels(){
     // create a font
     cFontPtr font = NEW_CFONTCALIBRI20();
@@ -343,7 +359,7 @@ void afSpaceNavControlPlugin::physicsUpdate(double dt){
     m_activeControlObjectName = m_controllableObjectsName[m_index];
 
     if(m_activeControlObjectPtr->getType() == afType::CAMERA){
-        m_spaceNavControl.controlCamera();
+        m_spaceNavControl.controlCamera(afCameraPtr(m_activeControlObjectPtr));
     }
 
     else if (m_activeControlObjectPtr->getType() == afType::RIGID_BODY){

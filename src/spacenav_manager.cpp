@@ -143,14 +143,14 @@ int SpaceNavControl::measured_jp()
 }
 
 // Control Camera
-void SpaceNavControl::controlCamera()
+void SpaceNavControl::controlCamera(afCameraPtr cameraPtr)
 {   
     int result = measured_jp();
     cMatrix3d rotation;
     if (result == 1){ 
-        m_camera->setLocalPos(m_camera->getLocalPos() + m_camera->getLocalRot() * m_trans);
+        cameraPtr->setLocalPos(cameraPtr->getLocalPos() + cameraPtr->getLocalRot() * m_trans);
         rotation.setExtrinsicEulerRotationDeg(m_rot.x(), m_rot.y(), m_rot.z(), C_EULER_ORDER_ZYX);
-        m_camera->setLocalRot(m_camera->getLocalRot() * rotation);
+        cameraPtr->setLocalRot(cameraPtr->getLocalRot() * rotation);
     }
 }
 

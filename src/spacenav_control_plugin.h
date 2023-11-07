@@ -74,6 +74,7 @@ class afSpaceNavControlPlugin: public afSimulatorPlugin{
     protected:
         bool initLabels();
         bool initCamera(vector<string> cameraNames);
+        bool changeCamera(afCameraPtr cameraPtr);
         void updateButtons();
 
     // private:
