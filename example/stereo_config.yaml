@@ -1,0 +1,27 @@
+## Test config file for the spacenav
+## For surgical Robotics Challenge
+
+control objects:
+- CAMERA cameraR
+- CAMERA cameraL
+
+stereo_camera:
+- cameraR
+- cameraL
+
+# Scaling for the motion
+scaling: [0.000001 , 0.000001, 0.000001, 0.0001, 0.0001, 0.0001]
+
+# Deadbound
+deadbound:
+  translation: 0.1
+  rotation: 0.1
+
+# The number of polls needed to be done 
+# before the device is considered "static"
+static count threshold: 100
+
+# Scaling used for moving the rigid bodys
+velocity sclaing:
+  linear: 100.0
+  angular: 2.0

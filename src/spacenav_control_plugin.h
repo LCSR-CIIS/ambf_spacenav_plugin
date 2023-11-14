@@ -111,6 +111,10 @@ class afSpaceNavControlPlugin: public afSimulatorPlugin{
         cShapeSphere* m_burrMesh;
         afRigidBodyPtr m_drillPtr;
 
+        //Stereo Camera related
+        bool m_isStereo = false;
+        vector<afCameraPtr> m_stereoCameraPtr;
+
 };
 
 

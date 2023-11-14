@@ -188,6 +188,17 @@ int afSpaceNavControlPlugin::init(int argc, char** argv, const afWorldPtr a_afWo
             }
         }
 
+        if(node["stereo_camera"]){
+            m_isStereo = true;
+            cout << "stereo" << endl;
+            for (int i = 0; i < node["stereo_camera"].size(); i++){
+                afCameraPtr cameraPtr = m_worldPtr->getCamera(node["stereo_camera"][i].as<string>());
+                m_stereoCameraPtr.push_back(cameraPtr);
+            }
+            m_controllableObjectsName.push_back("stereo_camera");
+            m_controllableObjectsPtr.push_back(m_stereoCameraPtr[0]);
+        }
+
     }
 
     // No config file specified
@@ -359,7 +370,15 @@ void afSpaceNavControlPlugin::physicsUpdate(double dt){
     m_activeControlObjectName = m_controllableObjectsName[m_index];
 
     if(m_activeControlObjectPtr->getType() == afType::CAMERA){
-        m_spaceNavControl.controlCamera(afCameraPtr(m_activeControlObjectPtr));
+        if(m_activeControlObjectName == "stereo_camera" && m_isStereo){
+            for (int i = 0; i < m_stereoCameraPtr.size(); i++){
+                m_spaceNavControl.controlCamera(m_stereoCameraPtr[i]);
+            }
+        }
+        else{
+            m_spaceNavControl.controlCamera(afCameraPtr(m_activeControlObjectPtr));
+        }
+        
     }
 
     else if (m_activeControlObjectPtr->getType() == afType::RIGID_BODY){
