@@ -107,6 +107,7 @@ int afSpaceNavControlPlugin::init(int argc, char** argv, const afWorldPtr a_afWo
         // Get contorl objects
         m_num = node["control objects"].size();
 
+        bool isVolume = false;
         for (size_t i = 0; i < m_num; i++)
         {   
             string objectName = node["control objects"][i].as<string>();
@@ -126,6 +127,8 @@ int afSpaceNavControlPlugin::init(int argc, char** argv, const afWorldPtr a_afWo
             }
             else if (objectType == "VOLUME"){
                 objectPtr = m_worldPtr->getVolume(objectName);
+                m_volumeName = objectName;
+                isVolume = true;
             }
             else if (objectType == "BODY"){
                 objectPtr = m_worldPtr->getRigidBody(objectName);
@@ -197,6 +200,23 @@ int afSpaceNavControlPlugin::init(int argc, char** argv, const afWorldPtr a_afWo
             }
             m_controllableObjectsName.push_back("stereo_camera");
             m_controllableObjectsPtr.push_back(m_stereoCameraPtr[0]);
+        }
+
+        if (node["slice volume"]){
+            if (node["slice volume"] && isVolume){
+                if (node["slice volume"]["matcap path"]){
+                    bool result = m_voulmeManager.initVolume(m_worldPtr, m_volumeName, node["slice volume"]["matcap path"].as<string>());
+                        if (!result){
+                            cerr << "[ERROR] CANNOT INITIALIZE VOLUME MANAGER!!" << endl;
+                            return -1;
+                        }
+                    m_rosInterface.init("volumeSlicing");
+                    m_isVolume = true;
+                }
+                else{
+                    cerr << "[ERROR] NO MATCAP path defined!" << endl;
+                }
+            }
         }
 
     }
@@ -359,15 +379,42 @@ void afSpaceNavControlPlugin::graphicsUpdate(){
     m_panelManager.update();
 }
 
-void afSpaceNavControlPlugin::physicsUpdate(double dt){
+void afSpaceNavControlPlugin::physicsUpdate(double dt)
+{
+    m_spaceNavControl.measured_jp();
     
+    if (m_isVolume){
+        m_index = int(m_spaceNavControl.m_buttons[0]/2) % m_num;
+
+        if (m_controllableObjectsPtr[m_index]->getType() == afType::VOLUME){
+            m_activeControlObjectName = "Slicing VOLUME " + m_controllableObjectsName[m_index];
+            if (int(m_spaceNavControl.m_buttons[1]/2) % 2 == 1){
+                m_isSlice = true;
+                int axis = 0;
+                double value = 0;
+                m_spaceNavControl.getMaxTransValue(axis, value);
+                m_voulmeManager.sliceVolume(axis, value);
+                m_rosInterface.publishAxisValue(axis, value);
+            }
+            else {
+                m_isSlice = false;
+            }
+        }
+
+    }
+
+    else {
+        m_index = (int(m_spaceNavControl.m_buttons[0]/2) - int(m_spaceNavControl.m_buttons[1]/2)) % m_num;
+    }
+
     // Get the index of the objects that you are controlling
-    m_index = (int(m_spaceNavControl.m_buttons[0]/2) - int(m_spaceNavControl.m_buttons[1]/2)) % m_num;
     if (m_index < 0){
         m_index += m_num;
     }
     m_activeControlObjectPtr = m_controllableObjectsPtr[m_index];
-    m_activeControlObjectName = m_controllableObjectsName[m_index];
+    if (!m_isSlice){
+        m_activeControlObjectName = m_controllableObjectsName[m_index];
+    }
 
     if(m_activeControlObjectPtr->getType() == afType::CAMERA){
         if(m_activeControlObjectName == "stereo_camera" && m_isStereo){
@@ -385,9 +432,13 @@ void afSpaceNavControlPlugin::physicsUpdate(double dt){
         m_spaceNavControl.controlRigidBody(afRigidBodyPtr(m_activeControlObjectPtr));
     }
 
-    else{
+    else if(!m_isSlice && m_activeControlObjectPtr->getType() == afType::VOLUME){
         m_spaceNavControl.controlObject(m_activeControlObjectPtr);
     }
+
+    // else{
+    //     m_spaceNavControl.controlObject(m_activeControlObjectPtr);
+    // }
 }
 
 

@@ -37,67 +37,26 @@
 
     \author    <hishida3@jhu.edu>
     \author    Hisashi Ishida
+    
 */
 //==============================================================================
 
-#ifndef SPACENAV_MANAGER_H
-#define SPACENAV_MANAGER_H
+#include "ros_interface.h"
 
-#include "ros/ros.h"
-#include <afFramework.h>
+RosInterface::RosInterface(){
+    
+}
 
-#include <sensor_msgs/Joy.h>
-#include <spnav.h>
+void RosInterface::init(string a_namespace){
+    m_rosNode = afROSNode::getNode();
+    m_axisValuePub = m_rosNode->advertise<std_msgs::Float32MultiArray>(a_namespace + "/axis_value", 1);
+}
 
-using namespace chai3d;
-using namespace ambf;
-using namespace std;
-
-
-class SpaceNavControl{
-
-    public:
-        SpaceNavControl();
-
-        int init(afWorldPtr a_afWorld, afCameraPtr &a_camera);
-        int measured_jp();
-        void controlCamera(afCameraPtr cameraPtr);
-        void controlObject(afBaseObjectPtr objectPtr);
-        void controlRigidBody(afRigidBodyPtr rigidBodyPtr);
-        void controlCObject(cShapeSphere* objectPtr);
-        void getMaxTransValue(int &axisIndex, double &value);
-        void close();
-
-    // private:
-
-        // Pointer to the world/camera
-        afWorldPtr m_worldPtr;
-        afCameraPtr m_camera;
-        afVolumePtr m_volume;
-        afRigidBodyPtr m_rigidBody;
-
-        // Spacenav related param
-        vector<double> m_scale; 
-        vector<double> m_deadbound; // if the value is less than this value, then we regard them as "static"
-        int m_staticCountThres;
-        int m_noMotion = 0;
-
-        cVector3d m_trans;
-        cVector3d m_rot;
-
-        vector<double> m_buttons;
-        bool m_spanavEnable = false;
-        spnav_event sev;
-
-        int count = 0;
-
-        double m_scale_linear;
-        double m_scale_angular;
-        
-
-
-};
-
-
-
-#endif //SPACENAV_MANAGER_H
+void RosInterface::publishAxisValue(int axis, double value){
+    vector<float> data;
+    data.push_back(axis);
+    data.push_back(value);
+    std_msgs::Float32MultiArray msg;
+    msg.data = data;
+    m_axisValuePub.publish(msg);
+}

@@ -46,9 +46,11 @@
 #include "camera_panel_manager.h"
 
 #include "spacenav_manager.h"
+#include "volume_manager.h"
 #include <yaml-cpp/yaml.h>
 
 #include <boost/program_options.hpp>
+#include "ros_interface.h"
 
 namespace boost{
     namespace program_options{
@@ -114,6 +116,15 @@ class afSpaceNavControlPlugin: public afSimulatorPlugin{
         //Stereo Camera related
         bool m_isStereo = false;
         vector<afCameraPtr> m_stereoCameraPtr;
+
+        // Volume related
+        VolumeManager m_voulmeManager;
+        string m_volumeName;
+        bool m_isVolume = false;
+        bool m_isSlice = false;
+        RosInterface m_rosInterface;
+
+
 
 };
 

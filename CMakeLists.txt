@@ -59,6 +59,10 @@ add_library(spacenav_plugin SHARED
     src/spacenav_control_plugin.h
     src/spacenav_manager.cpp
     src/spacenav_manager.h
+    src/volume_manager.cpp
+    src/volume_manager.h
+    src/ros_interface.cpp
+    src/ros_interface.h
     )
 
 target_link_libraries (spacenav_plugin ${Boost_LIBRARIES} ${AMBF_LIBRARIES} spnav)

@@ -37,67 +37,37 @@
 
     \author    <hishida3@jhu.edu>
     \author    Hisashi Ishida
+    
+    \author    <amunawar@jhu.edu>
+    \author    Adnan Munawar
 */
 //==============================================================================
+#ifndef VOLUME_MANAGER
+#define VOLUME_MANAGER
 
-#ifndef SPACENAV_MANAGER_H
-#define SPACENAV_MANAGER_H
-
-#include "ros/ros.h"
+// To silence warnings on MacOS
+#define GL_SILENCE_DEPRECATION
 #include <afFramework.h>
 
-#include <sensor_msgs/Joy.h>
-#include <spnav.h>
-
-using namespace chai3d;
-using namespace ambf;
 using namespace std;
+using namespace ambf;
 
-
-class SpaceNavControl{
-
+class VolumeManager{
     public:
-        SpaceNavControl();
+        VolumeManager();
+        bool initVolume(afWorldPtr a_worldPtr, string volume_name, string volumeMatcapFilepath);
+        void sliceVolume(int axisIdx, double delta);
 
-        int init(afWorldPtr a_afWorld, afCameraPtr &a_camera);
-        int measured_jp();
-        void controlCamera(afCameraPtr cameraPtr);
-        void controlObject(afBaseObjectPtr objectPtr);
-        void controlRigidBody(afRigidBodyPtr rigidBodyPtr);
-        void controlCObject(cShapeSphere* objectPtr);
-        void getMaxTransValue(int &axisIndex, double &value);
-        void close();
-
-    // private:
-
-        // Pointer to the world/camera
         afWorldPtr m_worldPtr;
-        afCameraPtr m_camera;
-        afVolumePtr m_volume;
-        afRigidBodyPtr m_rigidBody;
+        afVolumePtr m_volumeObject;
+        bool m_flagMarkVolumeForUpdate = true;
+        cVoxelObject* m_voxelObj;
+        cVector3d m_maxVolCorner, m_minVolCorner;
+        cVector3d m_maxTexCoord, m_minTexCoord;
+        cVector3d m_textureCoordScale; // Scale between volume corners extent and texture coordinates extent
 
-        // Spacenav related param
-        vector<double> m_scale; 
-        vector<double> m_deadbound; // if the value is less than this value, then we regard them as "static"
-        int m_staticCountThres;
-        int m_noMotion = 0;
-
-        cVector3d m_trans;
-        cVector3d m_rot;
-
-        vector<double> m_buttons;
-        bool m_spanavEnable = false;
-        spnav_event sev;
-
-        int count = 0;
-
-        double m_scale_linear;
-        double m_scale_angular;
-        
-
-
+        cMutex m_mutexVoxel;    
+        cCollisionAABBBox m_volumeUpdate;
 };
 
-
-
-#endif //SPACENAV_MANAGER_H
+#endif
