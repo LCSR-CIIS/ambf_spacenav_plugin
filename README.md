@@ -79,6 +79,17 @@ velocity sclaing:
   angular: 2.0
 ```
 
+### 3.1 Slicing Volume
+If you add the following line in your configuration you will be able to slice the volume in the scene.
+
+```spacenav_config.yaml
+# Define if you need want to slice volume or not
+slice volume:
+  matcap path: /home/hishida3/adnan/volumetric_drilling/resources/matcap/00ShinyWhite.jpg
+```
+While you are selecting the VOLUME, press the right button on youy spcaenav to activate "sliciing mode".
+
+
 ## 4. Keyboard shorcuts
 `[Ctrl + L]` : show/hide list of controllable objects.
 

@@ -208,7 +208,6 @@ void SpaceNavControl::getMaxTransValue(int &axisIndex, double &value){
     int result = measured_jp();
     double maxValue = 0;
     axisIndex = 0;
-    cout << "m_trans:" << m_trans.str(8) << endl;
     for (int index = 0; index < 3; index++){
         if (abs(m_trans.get(index)) > maxValue){
             maxValue = abs(m_trans.get(index));
@@ -216,7 +215,6 @@ void SpaceNavControl::getMaxTransValue(int &axisIndex, double &value){
         }
     }
     value = m_trans.get(axisIndex);
-    cout << "axis:" << axisIndex << ", Value:" << value << endl;
 }
 
 void SpaceNavControl::close(){
