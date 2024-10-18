@@ -18,7 +18,7 @@ sudo apt install spacenavd
 ```bash
 git clone git@github.com:LCSR-CIIS/ambf_spacenav_plugin.git
 cd ambf_spacenav_plugin
-mkdir build && cd 
+mkdir build && cd build
 cmake .. -DBUILD_PLUGIN_WITH_ROS=False
 make
 ```
