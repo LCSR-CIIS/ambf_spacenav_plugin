@@ -173,18 +173,32 @@ void SpaceNavControl::controlObject(afBaseObjectPtr objectPtr){
 // Control RigidBody Object
 void SpaceNavControl::controlRigidBody(afRigidBodyPtr rigidBodyPtr){
     int result = measured_jp();
+
     cMatrix3d rotation;
     if (rigidBodyPtr && result == 1){
-        btVector3 trans;
+        btVector3 trans, rot;
         trans.setValue((m_camera->getLocalRot() * m_trans).x() * m_scale_linear,\
          (m_camera->getLocalRot() * m_trans).y() * m_scale_linear,\
           (m_camera->getLocalRot() * m_trans).z()* m_scale_linear);
 
-        rigidBodyPtr->m_bulletRigidBody->setLinearVelocity(trans);
-
-        btVector3 rot;
         rot.setValue(-m_rot.x(), -m_rot.y(), m_rot.z());
-        rigidBodyPtr->m_bulletRigidBody->setAngularVelocity(rot);
+
+        // Apply velocity
+        // rigidBodyPtr->m_bulletRigidBody->setLinearVelocity(trans);
+        // rigidBodyPtr->m_bulletRigidBody->setAngularVelocity(rot);
+
+        // Apply location
+        btTransform currentLocation, transform, command;
+        transform.setOrigin(0.002 * trans);
+        btQuaternion btRot;
+        btRot.setEulerZYX(rot.z(), rot.y(), rot.z());
+        transform.setRotation(btRot);
+        rigidBodyPtr->m_bulletRigidBody->getMotionState()->getWorldTransform(currentLocation);
+        command = currentLocation * transform;
+    
+        // Apply transformation to the child body
+        rigidBodyPtr->m_bulletRigidBody->getMotionState()->setWorldTransform(command);
+        rigidBodyPtr->m_bulletRigidBody->setWorldTransform(command);
     }
 }
 

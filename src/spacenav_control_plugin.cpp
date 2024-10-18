@@ -364,7 +364,7 @@ void afSpaceNavControlPlugin::keyboardUpdate(GLFWwindow* a_window, int a_key, in
 void afSpaceNavControlPlugin::graphicsUpdate(){
     m_panelManager.setText(m_activeObjectLabel, m_activeControlObjectName);
     string list_text = "--- List of Controlable objects ---\n";
-    for (int i = 0; i < m_num; i++){
+    for (int i = 0; i < m_controllableObjectsName.size(); i++){
         if (m_controllableObjectsName[i] == m_activeControlObjectName){
             list_text += "-> " + m_controllableObjectsName[i];
         }
