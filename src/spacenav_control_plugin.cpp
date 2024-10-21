@@ -233,7 +233,7 @@ void afSpaceNavControlPlugin::graphicsUpdate(){
     else{
         m_panelManager.setText(m_activeObjectLabel, m_activeContorlObject->name_);
     }
-    
+
     string list_text = "--- List of Controlable objects ---\n";
     for (int i = 0; i < m_num; i++){
         if (m_controllableObjects[i]->name_ == m_activeContorlObject->name_){
@@ -274,13 +274,12 @@ void afSpaceNavControlPlugin::physicsUpdate(double dt)
     // If the slicing is functionality is activated
     if (m_activeContorlObject->sliceVolume_){
         if (int(m_spaceNavControl.m_buttons[1]/2) % 2 == 1){
-            cerr << m_spaceNavControl.m_buttons[0] << m_spaceNavControl.m_buttons[1] << endl;
             // Get the Max translation value and send the axis and value
             int axis = 0;
             double value = 0;
             m_spaceNavControl.getMaxTransValue(axis, value);
             m_voulmeManager.sliceVolume(axis, value);
-            m_rosInterface.publishAxisValue(axis, value);
+            m_rosSlicingInterface.publishAxisValue(axis, value);
 
             m_isSlicing = true;
         }
@@ -295,7 +294,7 @@ void afSpaceNavControlPlugin::physicsUpdate(double dt)
                 int axis = 0;
                 double value = 0;
                 m_spaceNavControl.getMaxTransValue(axis, value);
-                m_rosInterface.publishAxisValue(axis, value);
+                m_rosInfoInterface.publishAxisValue(axis, value);
 
                 m_isSendingInfo = true;
         }
@@ -455,7 +454,7 @@ int afSpaceNavControlPlugin::loadConfigurationFile(string spec_filepath){
                                     cerr << "[ERROR] CANNOT INITIALIZE VOLUME MANAGER!!" << endl;
                                     return -1;
                                 }
-                            m_rosInterface.init("volumeSlicing");
+                            m_rosSlicingInterface.init("/spacenav/VolumeSlicing/");
                             m_useSingleButton = true;
                             cerr << "Slicing Volume: " << object->sliceVolume_ << endl;  
                         }
@@ -475,7 +474,7 @@ int afSpaceNavControlPlugin::loadConfigurationFile(string spec_filepath){
         if (node["publish state"]["object"]){
             for (ControllableObject* object: m_controllableObjects){
                 if (object->name_ == node["publish state"]["object"].as<string>()){
-                    m_rosInterface.init("publishstate");
+                    m_rosInfoInterface.init("/spacenav/State/");
                     object->publishState_ = true;
                     m_useSingleButton = true;
                 }

@@ -31,5 +31,5 @@ slice volume:
   volume name: mastoidectomy_volume
   matcap path: /home/hishida3/adnan/volumetric_drilling/resources/matcap/00ShinyWhite.jpg
 
-publish state: # ROSTOPIC /spacenav/State : geometry_msgs/Twist
+publish state: # ROSTOPIC /publishstate/axis_value
   object: drill_tip

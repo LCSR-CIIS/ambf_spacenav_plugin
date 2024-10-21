@@ -129,7 +129,8 @@ class afSpaceNavControlPlugin: public afSimulatorPlugin{
         bool m_useSingleButton = false;
         bool m_isSlicing = false;
         bool m_isSendingInfo = false;
-        RosInterface m_rosInterface;
+        RosInterface m_rosSlicingInterface;
+        RosInterface m_rosInfoInterface;
 
 
 

@@ -125,5 +125,5 @@ void VolumeManager::sliceVolume(int axisIdx, double delta)
     m_voxelObj->m_maxTextureCoord(axisIdx) = 0.5 + value * m_textureCoordScale(axisIdx);
     m_voxelObj->m_minTextureCoord(axisIdx) = 0.5 - value * m_textureCoordScale(axisIdx);
 
-    cerr << "> " << delta_dir_str << " Volume size along " << axis_str << " axis." << endl;
+    // cerr << "> " << delta_dir_str << " Volume size along " << axis_str << " axis." << endl;
 }
