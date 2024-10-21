@@ -63,6 +63,13 @@ namespace p_opt = boost::program_options;
 using namespace std;
 using namespace ambf;
 
+struct ControllableObject{
+    string name_;
+    afBaseObjectPtr objectPtr_;
+    bool sliceVolume_ = false;
+    bool publishState_ = false;
+};
+
 class afSpaceNavControlPlugin: public afSimulatorPlugin{
     public:
         afSpaceNavControlPlugin();
@@ -77,6 +84,8 @@ class afSpaceNavControlPlugin: public afSimulatorPlugin{
         bool initLabels();
         bool initCamera(vector<string> cameraNames);
         bool changeCamera(afCameraPtr cameraPtr);
+        int loadConfigurationFile(string spec_filepath);
+        int loadControllableObjectsFromWorld();
         void updateButtons();
 
     // private:
@@ -96,11 +105,8 @@ class afSpaceNavControlPlugin: public afSimulatorPlugin{
         bool m_enableList = true;
 
         // Controllable object
-        vector<afBaseObjectPtr> m_controllableObjectsPtr;
-        vector<string> m_controllableObjectsName;
-
-        afBaseObjectPtr m_activeControlObjectPtr;
-        string m_activeControlObjectName;
+        vector<ControllableObject*> m_controllableObjects;
+        ControllableObject* m_activeContorlObject;
 
         // SpaceNav related
         SpaceNavControl m_spaceNavControl;
@@ -120,8 +126,9 @@ class afSpaceNavControlPlugin: public afSimulatorPlugin{
         // Volume related
         VolumeManager m_voulmeManager;
         string m_volumeName;
-        bool m_isVolume = false;
-        bool m_isSlice = false;
+        bool m_useSingleButton = false;
+        bool m_isSlicing = false;
+        bool m_isSendingInfo = false;
         RosInterface m_rosInterface;
 
 

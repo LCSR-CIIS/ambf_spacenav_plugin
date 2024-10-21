@@ -101,166 +101,30 @@ int afSpaceNavControlPlugin::init(int argc, char** argv, const afWorldPtr a_afWo
     if(!spec_filepath.empty()){
         cerr << "> loading the user defined specfile..." << endl; 
         cerr << spec_filepath << endl;
-        //Load the user defined object here. 
-        YAML::Node node = YAML::LoadFile(spec_filepath);
-        
-        // Get contorl objects
-        m_num = node["control objects"].size();
-
-        bool isVolume = false;
-        for (size_t i = 0; i < m_num; i++)
-        {   
-            string objectName = node["control objects"][i].as<string>();
-            cout << "Looking for the object: \"" << objectName << "\"" << endl;
-            
-            string objectType = objectName.substr(0, objectName.find(" "));
-            objectName = objectName.substr(objectName.find(" "));
-            objectName.erase(0, 1);
-
-            // Get object type and the name
-            afBaseObjectPtr objectPtr;
-            if (objectType == "CAMERA"){
-                objectPtr = m_worldPtr->getCamera(objectName);
-            }
-            else if (objectType == "LIGHT"){
-                objectPtr = m_worldPtr->getLight(objectName);
-            }
-            else if (objectType == "VOLUME"){
-                objectPtr = m_worldPtr->getVolume(objectName);
-                m_volumeName = objectName;
-                isVolume = true;
-            }
-            else if (objectType == "BODY"){
-                objectPtr = m_worldPtr->getRigidBody(objectName);
-            }
-            else if (objectType == "JOINT"){
-                objectPtr = m_worldPtr->getJoint(objectName);
-            }
-            else {
-                objectPtr = m_worldPtr->getBaseObject(objectName, m_worldPtr->getChildrenMap());
-            }
-            
-            // Check if the object was found or not
-            if (objectPtr){
-                cerr << "FOUND!!" << endl;
-                m_controllableObjectsName.push_back(objectName);
-                m_controllableObjectsPtr.push_back(objectPtr);  
-            }
-
-            else {
-                cerr << "ERROR! COULD NOT FIND OBJECT NAMED \"" << objectName << "\"" << endl;
-            }
-            
+        if (loadConfigurationFile(spec_filepath) == -1){
+            return -1;
         }
-
-        // Get spacenav Parameters
-        if (node["scaling"]){
-            if (node["scaling"].as<std::vector<double>>().size() == 6){
-               m_spaceNavControl.m_scale = node["scaling"].as<std::vector<double>>();
-            }
-            else{
-                cerr << "ERROR in config file. The scaling has to be size 6." << endl;
-            }
-        }
-        
-        if (node["deadbound"]){
-            if (node["deadbound"]["translation"]){
-                double trans_db = node["deadbound"]["translation"].as<double>();
-                m_spaceNavControl.m_deadbound[0] = trans_db;
-                m_spaceNavControl.m_deadbound[1] = trans_db;
-                m_spaceNavControl.m_deadbound[2] = trans_db;
-            }
-            if (node["deadbound"]["rotation"]){
-                double rot_db = node["deadbound"]["rotation"].as<double>();
-                m_spaceNavControl.m_deadbound[3] = rot_db;
-                m_spaceNavControl.m_deadbound[4] = rot_db;
-                m_spaceNavControl.m_deadbound[5] = rot_db;
-            }
-        }
-
-        if (node["static count threshold"]){
-            m_spaceNavControl.m_staticCountThres = node["static count threshold"].as<int>();
-        }
-
-        if (node["velocity scaling"]){
-            if (node["velocity scaling"]["linear"]){
-                m_spaceNavControl.m_scale_linear = node["velocity scaling"]["linear"].as<double>();
-            }
-            if (node["velocity scaling"]["angular"]){
-                m_spaceNavControl.m_scale_angular = node["velocity scaling"]["angular"].as<double>();
-            }
-        }
-
-        if(node["stereo_camera"]){
-            m_isStereo = true;
-            cout << "stereo" << endl;
-            for (int i = 0; i < node["stereo_camera"].size(); i++){
-                afCameraPtr cameraPtr = m_worldPtr->getCamera(node["stereo_camera"][i].as<string>());
-                m_stereoCameraPtr.push_back(cameraPtr);
-            }
-            m_controllableObjectsName.push_back("stereo_camera");
-            m_controllableObjectsPtr.push_back(m_stereoCameraPtr[0]);
-        }
-
-        if (node["slice volume"]){
-            if (node["slice volume"] && isVolume){
-                if (node["slice volume"]["matcap path"]){
-                    bool result = m_voulmeManager.initVolume(m_worldPtr, m_volumeName, node["slice volume"]["matcap path"].as<string>());
-                        if (!result){
-                            cerr << "[ERROR] CANNOT INITIALIZE VOLUME MANAGER!!" << endl;
-                            return -1;
-                        }
-                    m_rosInterface.init("volumeSlicing");
-                    m_isVolume = true;
-                }
-                else{
-                    cerr << "[ERROR] NO MATCAP path defined!" << endl;
-                }
-            }
-        }
-
     }
 
     // No config file specified
     else{
         cerr << "No specfile loaded. Using the defualt config" << endl;
-
-        // Load every Model/Object in the world
-        // ModelMap: map<string, afModelPtr>
-        afModelMap* map = m_worldPtr->getModelMap();
-        for (auto it=map->begin(); it != map->end(); it++){
-        
-            //ChildrenMap: map<map<afType, map<string, afBaseObject*> >
-            afChildrenMap::iterator cIt;
-            afChildrenMap* childrenMap = it->second->getChildrenMap();
-
-            for(cIt = childrenMap->begin(); cIt != childrenMap->end(); ++cIt)
-            {   
-                for (auto it_child=cIt->second.begin(); it_child != cIt->second.end(); ++it_child){
-                        
-                    // Store the name and Ptr to the objects other than JOINT
-                    if (it_child->second->getType() != afType::JOINT)
-                    {
-                        m_controllableObjectsName.push_back(it_child->first);
-                        m_controllableObjectsPtr.push_back(it_child->second);
-                    }
-                }
-            }
-        }
+        loadControllableObjectsFromWorld();
     }
 
     // Initialize Labels
     bool initlabel = initLabels();
-    m_num = m_controllableObjectsPtr.size();
+    m_num = m_controllableObjects.size();
     cout << "------------ Controlable Object Details ------------" << endl;
     cout << "# of Objects:" <<  m_num << endl;
-    for (int i=0; i <  m_controllableObjectsPtr.size(); i++){
-        cout << m_controllableObjectsName[i] << endl;
+    for (int i=0; i <  m_controllableObjects.size(); i++){
+        cout << m_controllableObjects[i]->name_ << endl;
     }
     cout << "----------------------------------------------------" << endl;
 
     return 1;
 }
+
 bool afSpaceNavControlPlugin::initCamera(vector<string> cameraNames){
     cout << "> Initializing CAMERA ..." << endl;
     if (cameraNames.size() == 0){
@@ -345,7 +209,6 @@ bool afSpaceNavControlPlugin::initLabels(){
     m_panelManager.addPanel(m_objectListLabel, 0.01, 0.2, PanelReferenceOrigin::LOWER_LEFT, PanelReferenceType::NORMALIZED);
     m_panelManager.setVisible(m_objectListLabel, m_spaceNavControl.m_spanavEnable);
 
-
     return true;
 }
 
@@ -358,18 +221,26 @@ void afSpaceNavControlPlugin::keyboardUpdate(GLFWwindow* a_window, int a_key, in
             }
         }
     }
-
 }
 
 void afSpaceNavControlPlugin::graphicsUpdate(){
-    m_panelManager.setText(m_activeObjectLabel, m_activeControlObjectName);
+    if (m_activeContorlObject->publishState_ && m_isSendingInfo){
+        m_panelManager.setText(m_activeObjectLabel, "Publishing state ...");
+    }
+    else if (m_activeContorlObject->sliceVolume_ && m_isSlicing){
+        m_panelManager.setText(m_activeObjectLabel, "Slicing VOLUME" + m_activeContorlObject->name_);
+    }
+    else{
+        m_panelManager.setText(m_activeObjectLabel, m_activeContorlObject->name_);
+    }
+    
     string list_text = "--- List of Controlable objects ---\n";
     for (int i = 0; i < m_num; i++){
-        if (m_controllableObjectsName[i] == m_activeControlObjectName){
-            list_text += "-> " + m_controllableObjectsName[i];
+        if (m_controllableObjects[i]->name_ == m_activeContorlObject->name_){
+            list_text += "-> " + m_controllableObjects[i]->name_;
         }
         else{
-            list_text += m_controllableObjectsName[i];
+            list_text += m_controllableObjects[i]->name_;
         }
         if (i < m_num){
             list_text +=  "\n";
@@ -381,59 +252,79 @@ void afSpaceNavControlPlugin::graphicsUpdate(){
 
 void afSpaceNavControlPlugin::physicsUpdate(double dt)
 {
+    // Retrieve SpaceNav current status 
     m_spaceNavControl.measured_jp();
-    
-    if (m_isVolume){
-        m_index = int(m_spaceNavControl.m_buttons[0]/2) % m_num;
 
-        if (m_controllableObjectsPtr[m_index]->getType() == afType::VOLUME){
-            m_activeControlObjectName = "Slicing VOLUME " + m_controllableObjectsName[m_index];
-            if (int(m_spaceNavControl.m_buttons[1]/2) % 2 == 1){
-                m_isSlice = true;
-                int axis = 0;
-                double value = 0;
-                m_spaceNavControl.getMaxTransValue(axis, value);
-                m_voulmeManager.sliceVolume(axis, value);
-                m_rosInterface.publishAxisValue(axis, value);
-            }
-            else {
-                m_isSlice = false;
-            }
-        }
-
-    }
-
-    else {
+    // Get index from side buttons
+    if (!m_useSingleButton){
         m_index = (int(m_spaceNavControl.m_buttons[0]/2) - int(m_spaceNavControl.m_buttons[1]/2)) % m_num;
     }
+    else{
+        m_index = (int(m_spaceNavControl.m_buttons[0]/2)) % m_num;
+    }
 
-    // Get the index of the objects that you are controlling
+    // Make sure the index is in the range of [0 - m_num]
     if (m_index < 0){
         m_index += m_num;
     }
-    m_activeControlObjectPtr = m_controllableObjectsPtr[m_index];
-    if (!m_isSlice){
-        m_activeControlObjectName = m_controllableObjectsName[m_index];
+    
+    // Select the active control object
+    m_activeContorlObject = m_controllableObjects[m_index];
+
+    // If the slicing is functionality is activated
+    if (m_activeContorlObject->sliceVolume_){
+        if (int(m_spaceNavControl.m_buttons[1]/2) % 2 == 1){
+            cerr << m_spaceNavControl.m_buttons[0] << m_spaceNavControl.m_buttons[1] << endl;
+            // Get the Max translation value and send the axis and value
+            int axis = 0;
+            double value = 0;
+            m_spaceNavControl.getMaxTransValue(axis, value);
+            m_voulmeManager.sliceVolume(axis, value);
+            m_rosInterface.publishAxisValue(axis, value);
+
+            m_isSlicing = true;
+        }
+        else {
+            m_isSlicing = false;
+        }
     }
 
-    if(m_activeControlObjectPtr->getType() == afType::CAMERA){
-        if(m_activeControlObjectName == "stereo_camera" && m_isStereo){
+    if (m_activeContorlObject->publishState_){
+        if (int(m_spaceNavControl.m_buttons[1]/2) % 2 == 1){
+                // Get the Max translation value and send the axis and value
+                int axis = 0;
+                double value = 0;
+                m_spaceNavControl.getMaxTransValue(axis, value);
+                m_rosInterface.publishAxisValue(axis, value);
+
+                m_isSendingInfo = true;
+        }
+
+        else {
+            m_isSendingInfo = false;
+        }
+    }
+
+    // If the object is CAMERA
+    if(!m_isSendingInfo && m_activeContorlObject->objectPtr_->getType() == afType::CAMERA){
+        if(m_activeContorlObject->name_ == "stereo_camera" && m_isStereo){
             for (int i = 0; i < m_stereoCameraPtr.size(); i++){
                 m_spaceNavControl.controlCamera(m_stereoCameraPtr[i]);
             }
         }
         else{
-            m_spaceNavControl.controlCamera(afCameraPtr(m_activeControlObjectPtr));
+            m_spaceNavControl.controlCamera(afCameraPtr(m_activeContorlObject->objectPtr_));
         }
-        
     }
 
-    else if (m_activeControlObjectPtr->getType() == afType::RIGID_BODY){
-        m_spaceNavControl.controlRigidBody(afRigidBodyPtr(m_activeControlObjectPtr));
+    // If the object is RIGIDBODY
+    else if (!m_isSendingInfo && m_activeContorlObject->objectPtr_->getType() == afType::RIGID_BODY){
+        m_spaceNavControl.controlRigidBody(afRigidBodyPtr(m_activeContorlObject->objectPtr_));
     }
 
-    else if(!m_isSlice && m_activeControlObjectPtr->getType() == afType::VOLUME){
-        m_spaceNavControl.controlObject(m_activeControlObjectPtr);
+    // If the object is VOLUME
+    else if(!m_isSlicing && m_activeContorlObject->objectPtr_->getType() == afType::VOLUME){
+        m_spaceNavControl.controlObject(m_activeContorlObject->objectPtr_);
     }
 
     // else{
@@ -441,6 +332,182 @@ void afSpaceNavControlPlugin::physicsUpdate(double dt)
     // }
 }
 
+int afSpaceNavControlPlugin::loadConfigurationFile(string spec_filepath){
+    //Load the user defined object here. 
+    YAML::Node node = YAML::LoadFile(spec_filepath);
+    
+    // Get contorl objects
+    m_num = node["control objects"].size();
+
+    bool isVolume = false;
+    for (size_t i = 0; i < m_num; i++){   
+        string objectName = node["control objects"][i].as<string>();
+        cout << "Looking for the object: \"" << objectName << "\"" << endl;
+        
+        string objectType = objectName.substr(0, objectName.find(" "));
+        objectName = objectName.substr(objectName.find(" "));
+        objectName.erase(0, 1);
+
+        // Get object type and the name
+        afBaseObjectPtr objectPtr;
+        if (objectType == "CAMERA"){
+            objectPtr = m_worldPtr->getCamera(objectName);
+        }
+        else if (objectType == "LIGHT"){
+            objectPtr = m_worldPtr->getLight(objectName);
+        }
+        else if (objectType == "VOLUME"){
+            objectPtr = m_worldPtr->getVolume(objectName);
+            m_volumeName = objectName;
+            isVolume = true;
+        }
+        else if (objectType == "BODY"){
+            objectPtr = m_worldPtr->getRigidBody(objectName);
+        }
+        else if (objectType == "JOINT"){
+            objectPtr = m_worldPtr->getJoint(objectName);
+        }
+        else {
+            objectPtr = m_worldPtr->getBaseObject(objectName, m_worldPtr->getChildrenMap());
+        }
+        
+        // Check if the object was found or not
+        if (objectPtr){
+            cerr << "FOUND!!" << endl;
+            ControllableObject* controllableObject = new ControllableObject;
+            controllableObject->name_ = objectName;
+            controllableObject->objectPtr_ = objectPtr;
+            m_controllableObjects.push_back(controllableObject);
+        }
+
+        else {
+            cerr << "ERROR! COULD NOT FIND OBJECT NAMED \"" << objectName << "\"" << endl;
+        }    
+    }
+
+    // Get spacenav Parameters
+    if (node["scaling"]){
+        if (node["scaling"].as<std::vector<double>>().size() == 6){
+            m_spaceNavControl.m_scale = node["scaling"].as<std::vector<double>>();
+        }
+        else{
+            cerr << "ERROR in config file. The scaling has to be size 6." << endl;
+        }
+    }
+    
+    if (node["deadbound"]){
+        if (node["deadbound"]["translation"]){
+            double trans_db = node["deadbound"]["translation"].as<double>();
+            m_spaceNavControl.m_deadbound[0] = trans_db;
+            m_spaceNavControl.m_deadbound[1] = trans_db;
+            m_spaceNavControl.m_deadbound[2] = trans_db;
+        }
+        if (node["deadbound"]["rotation"]){
+            double rot_db = node["deadbound"]["rotation"].as<double>();
+            m_spaceNavControl.m_deadbound[3] = rot_db;
+            m_spaceNavControl.m_deadbound[4] = rot_db;
+            m_spaceNavControl.m_deadbound[5] = rot_db;
+        }
+    }
+
+    if (node["static count threshold"]){
+        m_spaceNavControl.m_staticCountThres = node["static count threshold"].as<int>();
+    }
+
+    if (node["velocity scaling"]){
+        if (node["velocity scaling"]["linear"]){
+            m_spaceNavControl.m_scale_linear = node["velocity scaling"]["linear"].as<double>();
+        }
+        if (node["velocity scaling"]["angular"]){
+            m_spaceNavControl.m_scale_angular = node["velocity scaling"]["angular"].as<double>();
+        }
+    }
+
+    if(node["stereo_camera"]){
+        m_isStereo = true;
+        cout << "stereo" << endl;
+        for (int i = 0; i < node["stereo_camera"].size(); i++){
+            afCameraPtr cameraPtr = m_worldPtr->getCamera(node["stereo_camera"][i].as<string>());
+            m_stereoCameraPtr.push_back(cameraPtr);
+        }
+        ControllableObject* controllableObject = new ControllableObject;
+        controllableObject->name_ = "stereo_camera";
+        controllableObject->objectPtr_ = m_stereoCameraPtr[0];
+        m_controllableObjects.push_back(controllableObject);
+    }
+
+    if (node["slice volume"]){
+        if (node["slice volume"] && isVolume){
+            if (node["slice volume"]["volume name"]){
+                // Check for the volume
+                for (ControllableObject* object: m_controllableObjects){
+                    cerr << object->name_ << endl;
+
+                    // If the name exist and the type is VOLUME
+                    if (object->name_ == node["slice volume"]["volume name"].as<string>() && object->objectPtr_->getType() == afType::VOLUME){
+                        
+                        object->sliceVolume_ = true;
+
+                        // Check for matcap (Needed for volume slicing)
+                        if (node["slice volume"]["matcap path"]){
+                            bool result = m_voulmeManager.initVolume(m_worldPtr, m_volumeName, node["slice volume"]["matcap path"].as<string>());
+                                if (!result){
+                                    cerr << "[ERROR] CANNOT INITIALIZE VOLUME MANAGER!!" << endl;
+                                    return -1;
+                                }
+                            m_rosInterface.init("volumeSlicing");
+                            m_useSingleButton = true;
+                            cerr << "Slicing Volume: " << object->sliceVolume_ << endl;  
+                        }
+                        else{
+                            cerr << "[ERROR] NO MATCAP path defined!" << endl;
+                        }
+                    }
+                }
+            }
+            else{
+                cerr << "[ERROR] NO Volume named " << endl;
+            }
+        }
+    }
+
+    if (node["publish state"]){
+        if (node["publish state"]["object"]){
+            for (ControllableObject* object: m_controllableObjects){
+                if (object->name_ == node["publish state"]["object"].as<string>()){
+                    m_rosInterface.init("publishstate");
+                    object->publishState_ = true;
+                    m_useSingleButton = true;
+                }
+            }
+        }
+    }
+
+    return 1;
+}
+
+int afSpaceNavControlPlugin::loadControllableObjectsFromWorld(){
+    // Load every Model/Object in the world
+    // ModelMap: map<string, afModelPtr>
+    afModelMap* map = m_worldPtr->getModelMap();
+    for (auto it=map->begin(); it != map->end(); it++){
+        //ChildrenMap: map<map<afType, map<string, afBaseObject*> >
+        afChildrenMap::iterator cIt;
+        afChildrenMap* childrenMap = it->second->getChildrenMap();
+
+        for(cIt = childrenMap->begin(); cIt != childrenMap->end(); ++cIt){   
+            for (auto it_child=cIt->second.begin(); it_child != cIt->second.end(); ++it_child){
+                // Store the name and Ptr to the objects other than JOINT
+                if (it_child->second->getType() != afType::JOINT){   
+                    ControllableObject* controllableObject = new ControllableObject;
+                    controllableObject->name_ = it_child->first;
+                    controllableObject->objectPtr_ = it_child->second;
+                    m_controllableObjects.push_back(controllableObject);
+                }
+            }
+        }
+    }
+}
 
 void afSpaceNavControlPlugin::reset(){
     cerr << "INFO! PLUGIN RESET CALLED" << endl;
