@@ -89,6 +89,9 @@ slice volume:
 ```
 While you are selecting the VOLUME, press the right button on youy spcaenav to activate "sliciing mode".
 
+### 3.2 Publishing information
+
+
 
 ## 4. Keyboard shorcuts
 `[Ctrl + L]` : show/hide list of controllable objects.
