@@ -6,11 +6,12 @@ This plugin will enable users to  control objects in AMBF simulation using 3Dcon
 ![SpaceNav_fig](/figs/spacenav.png)
 
 ## 1. Installation Instructions:
-Lets call the absolute location of this package as **<plugin_path>**. E.g. if you cloned this repo in your home folder, **<plugin_path>** = `~/ambf_spacenav_plugin/` OR `/home/<username>/ambf_spacenav_plugin`.
+Let's call the absolute location of this package as **<plugin_path>**. E.g. if you cloned this repo in your home folder, **<plugin_path>** = `~/ambf_spacenav_plugin/` OR `/home/<username>/ambf_spacenav_plugin`.
 
 ### 1.1 Install driver for spacenav
 ```
 sudo apt install spacenavd
+sudo apt install libspnav-dev
 ```
 
 
@@ -49,7 +50,7 @@ cd <ambf_exe_dir>
 You can specify your custom made configuration file to specify what kind of objects you want to control.
 ```spacenav_config.yaml
 
-# Controlable objects
+# Controllable objects
 control objects:
 - CAMERA main_camera
 - VOLUME mastoidectomy_volume
@@ -74,7 +75,7 @@ deadbound:
 static count threshold: 100
 
 # Scaling used for moving the rigid bodys
-velocity sclaing:
+velocity scaling:
   linear: 100.0
   angular: 2.0
 ```
@@ -87,7 +88,7 @@ If you add the following line in your configuration you will be able to slice th
 slice volume:
   matcap path: /home/hishida3/adnan/volumetric_drilling/resources/matcap/00ShinyWhite.jpg
 ```
-While you are selecting the VOLUME, press the right button on youy spcaenav to activate "sliciing mode".
+While you are selecting the VOLUME, press the right button on youy spcaenav to activate "slicing mode".
 
 ### 3.2 Publishing information
 
