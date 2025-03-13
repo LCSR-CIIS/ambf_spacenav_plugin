@@ -22,7 +22,7 @@ deadbound:
 static count threshold: 100
 
 # Scaling used for moving the rigid bodys
-velocity sclaing:
+velocity scaling:
   linear: 100.0
   angular: 2.0
 
