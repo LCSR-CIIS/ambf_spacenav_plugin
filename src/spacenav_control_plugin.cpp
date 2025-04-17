@@ -381,6 +381,7 @@ int afSpaceNavControlPlugin::loadConfigurationFile(string spec_filepath){
 
         else {
             cerr << "ERROR! COULD NOT FIND OBJECT NAMED \"" << objectName << "\"" << endl;
+            return -1;
         }    
     }
 

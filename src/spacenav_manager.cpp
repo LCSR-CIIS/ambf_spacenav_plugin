@@ -180,11 +180,19 @@ void SpaceNavControl::controlRigidBody(afRigidBodyPtr rigidBodyPtr){
          (m_camera->getLocalRot() * m_trans).y() * m_scale_linear,\
           (m_camera->getLocalRot() * m_trans).z()* m_scale_linear);
 
-        rigidBodyPtr->m_bulletRigidBody->setLinearVelocity(trans);
-
         btVector3 rot;
         rot.setValue(-m_rot.x(), -m_rot.y(), m_rot.z());
-        rigidBodyPtr->m_bulletRigidBody->setAngularVelocity(rot);
+
+        // Set either Force or Velocity to control the rigidbody
+        if (rigidBodyPtr->m_controller.m_positionOutputType == afControlType::FORCE){
+            rigidBodyPtr->m_bulletRigidBody->applyCentralForce(trans);
+            rigidBodyPtr->m_bulletRigidBody->applyTorque(rot);
+        }
+
+        else if (rigidBodyPtr->m_controller.m_positionOutputType == afControlType::VELOCITY){
+            rigidBodyPtr->m_bulletRigidBody->setLinearVelocity(trans);
+            rigidBodyPtr->m_bulletRigidBody->setAngularVelocity(rot);
+        }
     }
 }
 
