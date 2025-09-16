@@ -62,6 +62,7 @@ class SpaceNavControl{
         int init(afWorldPtr a_afWorld, afCameraPtr &a_camera);
         int measured_jp();
         void controlCamera(afCameraPtr cameraPtr);
+        void controlCameraOrbit(afCameraPtr cameraPtr);
         void controlObject(afBaseObjectPtr objectPtr);
         void controlRigidBody(afRigidBodyPtr rigidBodyPtr);
         void controlCObject(cShapeSphere* objectPtr);
@@ -74,6 +75,7 @@ class SpaceNavControl{
         afWorldPtr m_worldPtr;
         afCameraPtr m_camera;
         afVolumePtr m_volume;
+        cVoxelObject* m_voxelObj;
         afRigidBodyPtr m_rigidBody;
 
         // Spacenav related param
@@ -94,6 +96,8 @@ class SpaceNavControl{
         double m_scale_linear;
         double m_scale_angular;
         
+        // For camera control around Volume
+        cVector3d m_volumeCenter;
 
 
 };

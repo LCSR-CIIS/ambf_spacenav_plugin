@@ -306,13 +306,18 @@ void afSpaceNavControlPlugin::physicsUpdate(double dt)
 
     // If the object is CAMERA
     if(!m_isSendingInfo && m_activeContorlObject->objectPtr_->getType() == afType::CAMERA){
-        if(m_activeContorlObject->name_ == "stereo_camera" && m_isStereo){
-            for (int i = 0; i < m_stereoCameraPtr.size(); i++){
-                m_spaceNavControl.controlCamera(m_stereoCameraPtr[i]);
-            }
+        if (m_cameraVolumeOrbitcontol){
+            m_spaceNavControl.controlCameraOrbit(afCameraPtr(m_activeContorlObject->objectPtr_));
         }
         else{
-            m_spaceNavControl.controlCamera(afCameraPtr(m_activeContorlObject->objectPtr_));
+            if(m_activeContorlObject->name_ == "stereo_camera" && m_isStereo){
+                for (int i = 0; i < m_stereoCameraPtr.size(); i++){
+                    m_spaceNavControl.controlCamera(m_stereoCameraPtr[i]);
+                }
+            }
+            else{
+                m_spaceNavControl.controlCamera(afCameraPtr(m_activeContorlObject->objectPtr_));
+            }
         }
     }
 
@@ -479,6 +484,15 @@ int afSpaceNavControlPlugin::loadConfigurationFile(string spec_filepath){
                     m_useSingleButton = true;
                 }
             }
+        }
+    }
+
+    if (node["camera motion reference frame"]){
+        if (node["camera motion reference frame"].as<string>() == "VOLUME"){
+            m_cameraVolumeOrbitcontol = true;
+            m_spaceNavControl.m_volume = m_worldPtr->getVolume(node["camera motion reference name"].as<string>());
+            m_spaceNavControl.m_voxelObj = m_spaceNavControl.m_volume->getInternalVolume();
+            m_spaceNavControl.m_volumeCenter = 0.5 * (m_spaceNavControl.m_voxelObj->m_maxCorner + m_spaceNavControl.m_voxelObj->m_minCorner);
         }
     }
 

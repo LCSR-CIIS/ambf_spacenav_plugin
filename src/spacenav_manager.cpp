@@ -120,8 +120,8 @@ int SpaceNavControl::measured_jp()
         case SPNAV_EVENT_MOTION:
 
             if (abs(sev.motion.z < 510) && abs(sev.motion.x < 510) && abs(sev.motion.y < 510) && abs(sev.motion.rz < 510 && abs(sev.motion.rx < 510)) && abs(sev.motion.ry < 510)){
-                m_trans.set(-sev.motion.z  * m_scale[0], sev.motion.x * m_scale[1], sev.motion.y  * m_scale[2]);
-                m_rot.set(sev.motion.rz * m_scale[3], -sev.motion.rx * m_scale[4], sev.motion.ry* m_scale[5]);
+                m_trans.set(sev.motion.x  * m_scale[0],  -sev.motion.z * m_scale[1], sev.motion.y  * m_scale[2]);
+                m_rot.set(sev.motion.rx * m_scale[3], -sev.motion.rz * m_scale[4], sev.motion.ry* m_scale[5]);
             }
 
             break;
@@ -147,10 +147,34 @@ void SpaceNavControl::controlCamera(afCameraPtr cameraPtr)
 {   
     int result = measured_jp();
     cMatrix3d rotation;
+    cMatrix3d offset(cVector3d(0,1,0), cVector3d(0,0,-1), cVector3d(1,0,0));
     if (result == 1){ 
-        cameraPtr->setLocalPos(cameraPtr->getLocalPos() + cameraPtr->getLocalRot() * m_trans);
-        rotation.setExtrinsicEulerRotationDeg(m_rot.x(), m_rot.y(), m_rot.z(), C_EULER_ORDER_ZYX);
+        cameraPtr->setLocalPos(cameraPtr->getLocalPos() + cameraPtr->getLocalRot() * offset  * m_trans);
+        rotation.setExtrinsicEulerRotationDeg(-m_rot.y(), m_rot.x(), m_rot.z(), C_EULER_ORDER_ZYX);
         cameraPtr->setLocalRot(cameraPtr->getLocalRot() * rotation);
+    }
+}
+
+// Control Camera
+void SpaceNavControl::controlCameraOrbit(afCameraPtr cameraPtr)
+{   
+    int result = measured_jp();
+    cMatrix3d rotation;
+    cMatrix3d offset(cVector3d(0,1,0), cVector3d(0,0,-1), cVector3d(1,0,0));
+    if (result == 1){ 
+        // If the input is translation dominant
+        if (m_trans.length() > m_rot.length()){
+            cameraPtr->setLocalPos(cameraPtr->getLocalPos() + cameraPtr->getLocalRot() * offset  * m_trans);
+        }
+        else{
+            rotation.setExtrinsicEulerRotationDeg(0,0, m_rot.z(), C_EULER_ORDER_ZYX);
+            cVector3d vectorUp = cameraPtr->getLocalRot() * rotation * cVector3d(0,0,1);
+            cVector3d volumeCenter = m_voxelObj->getLocalTransform() * m_volumeCenter;
+            cameraPtr->setLocalPos(cameraPtr->getLocalPos() + cameraPtr->getLocalRot() * offset  * cVector3d(0,0,m_trans.z()));
+            cVector3d desiredPos =  cameraPtr->getLocalPos() + cameraPtr->getLocalRot() * (cVector3d(m_trans.z(), 0,0)  + cVector3d(0.0, -m_rot.y(), -m_rot.x()));
+            desiredPos = (desiredPos - volumeCenter) * (cameraPtr->getLocalPos() - volumeCenter).length()/(desiredPos - volumeCenter).length() + volumeCenter;
+            cameraPtr->setView(desiredPos, volumeCenter - desiredPos, vectorUp);
+        }       
     }
 }
 
@@ -161,7 +185,7 @@ void SpaceNavControl::controlObject(afBaseObjectPtr objectPtr){
     if (objectPtr && result == 1){
         objectPtr->setLocalPos(objectPtr->getLocalPos() + m_camera->getLocalRot() * m_trans);
         
-        rotation.setExtrinsicEulerRotationDeg(-m_scale_angular * m_rot.x(), -m_scale_angular * m_rot.y(), m_scale_angular * m_rot.z(), C_EULER_ORDER_XYZ);
+        rotation.setExtrinsicEulerRotationDeg(m_scale_angular * m_rot.y(), m_scale_angular * m_rot.x(), m_scale_angular * m_rot.z(), C_EULER_ORDER_XYZ);
         cMatrix3d cam_rot = m_camera->getLocalRot();
         cam_rot.invert();
         cMatrix3d rotation1 = cam_rot * rotation * m_camera->getLocalRot();
@@ -176,14 +200,14 @@ void SpaceNavControl::controlRigidBody(afRigidBodyPtr rigidBodyPtr){
     cMatrix3d rotation;
     if (rigidBodyPtr && result == 1){
         btVector3 trans;
-        trans.setValue((m_camera->getLocalRot() * m_trans).x() * m_scale_linear,\
-         (m_camera->getLocalRot() * m_trans).y() * m_scale_linear,\
+        trans.setValue((m_camera->getLocalRot() * m_trans).y() * m_scale_linear,\
+         (m_camera->getLocalRot() * m_trans).x() * m_scale_linear,\
           (m_camera->getLocalRot() * m_trans).z()* m_scale_linear);
 
         rigidBodyPtr->m_bulletRigidBody->setLinearVelocity(trans);
 
         btVector3 rot;
-        rot.setValue(-m_rot.x(), -m_rot.y(), m_rot.z());
+        rot.setValue(m_rot.y(), m_rot.x(), m_rot.z());
         rigidBodyPtr->m_bulletRigidBody->setAngularVelocity(rot);
     }
 }
@@ -194,7 +218,7 @@ void SpaceNavControl::controlCObject(cShapeSphere* objectPtr){
     cMatrix3d rotation;
     if (objectPtr){
         objectPtr->setLocalPos(objectPtr->getLocalPos() + m_camera->getLocalRot() * m_trans);
-        rotation.setExtrinsicEulerRotationDeg(-m_rot.x(), -m_rot.y(), m_rot.z(), C_EULER_ORDER_XYZ);
+        rotation.setExtrinsicEulerRotationDeg(m_rot.y(), m_rot.y(), m_rot.z(), C_EULER_ORDER_XYZ);
         cMatrix3d cam_rot = m_camera->getLocalRot();
         cam_rot.invert();
         cMatrix3d rotation1 = cam_rot * rotation * m_camera->getLocalRot();

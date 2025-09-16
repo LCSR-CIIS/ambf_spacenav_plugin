@@ -132,7 +132,7 @@ class afSpaceNavControlPlugin: public afSimulatorPlugin{
         RosInterface m_rosSlicingInterface;
         RosInterface m_rosInfoInterface;
 
-
+        bool m_cameraVolumeOrbitcontol = false;
 
 };
 
